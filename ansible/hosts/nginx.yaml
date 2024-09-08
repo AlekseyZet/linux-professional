@@ -1,0 +1,40 @@
+# NGINX PLAYBOOK
+---
+- name: Install and configure nginx
+  hosts: "all"
+  become: True
+  vars:
+    nginx_listen_port: 8080
+
+  tasks:
+    - name: "Update package cache"
+      ansible.builtin.apt:
+        update_cache: true
+      tags:
+        - update apt
+      async: 60
+      poll: 60
+    - name: Install nginx via apt
+      apt:
+        name: nginx
+        state: latest
+      tags:
+        - nginx-package
+    - name: Create NGINX config file from template
+      template:
+        src: template/nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+      notify:
+        - reload nginx
+      tags:
+        - nginx-configuration
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: yes
+    - name: reload nginx
+      systemd:
+        name: nginx
+        state: reloaded
